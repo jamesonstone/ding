@@ -27,6 +27,23 @@ go.work.sum
 # env file
 .env
 
+# ding build output and local SQLite databases
+/bin/
+*.db
+*.db-shm
+*.db-wal
+
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Kit local generated environment, cache, and scratch artifacts
+.envrc
+.kit/runs/
+.kit/loops/
+.kit/state.json
+.kit/cache/
+.kit/tmp/
+.kit/temp/
+.kit/*.tmp
+.kit/*.lock

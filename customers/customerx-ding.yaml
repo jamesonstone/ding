@@ -1,0 +1,16 @@
+# Customer metadata only. The database (SQLite at DING_DB_PATH) is the source of
+# truth for invoices. Secrets (API keys, webhooks) are never stored here — they
+# come from environment variables (see .env.example).
+customer:
+  id: customerx
+  name: Customer X
+  email: customerx@example.com
+sender:
+  name: Jameson Stone
+  email: jameson@stone.tc
+terms:
+  net_days: 30
+email:
+  subject: "Invoice status — {{.Month}} {{.Year}}"
+  cc: []
+  reminder_threshold_days: 0

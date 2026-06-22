@@ -1,0 +1,20 @@
+Invoice status — {{.Month}} {{.Year}}
+
+Hi {{.CustomerName}},
+
+Here is your current invoice summary. Outstanding balances are grouped by the
+month each invoice was issued.
+{{range .Months}}
+[{{upper .Label}}]
+Invoice	Issued	Due	Amount	Status	Days Late	Outstanding
+------------------------------------------------------------------------
+{{- range .Invoices}}
+{{.ID}}	{{.Issued}}	{{.Due}}	{{.Amount}}	{{.Status}}	{{.DaysLate}}	{{.Outstanding}}
+{{- end}}
+{{.Label}} subtotal: {{.MonthTotal}}
+{{end}}
+========================================================================
+TOTAL OUTSTANDING: {{.TotalOutstanding}}
+
+Thanks,
+{{.SenderName}}
