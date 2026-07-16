@@ -86,7 +86,39 @@ Repeat for `status` (option: `customer`) and `seed` (options: `customer`, `id`,
 API Gateway `POST /interactions` URL; Discord sends a PING that the handler
 answers with PONG.
 
-## 6. Verify
+## 6. Alternative: EC2 / container (HTTP server mode)
+
+Instead of Lambda + API Gateway, ding can run as a persistent HTTP server. The
+same binary switches to this mode when `DING_HTTP_LISTEN` is set.
+
+1. **Build** a Linux binary (reuse the artifact from Step 1, or
+   `GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o ding ./cmd/ding`).
+2. **Launch** an EC2 instance (or ECS/Fargate container) with a persistent,
+   single-writer volume mounted at `/mnt/ding` (or your choice).
+3. **Set environment variables** (see `.env.example`):
+   ```bash
+   export DING_HTTP_LISTEN=":8080"
+   export DING_DB_PATH="/mnt/ding/ding.db"
+   export RESEND_API_KEY="re_..."
+   export DISCORD_PUBLIC_KEY="..."
+   # ... plus the other variables from the table above
+   ```
+4. **Migrate once** against the same path: `DING_DB_PATH=/mnt/ding/ding.db ./ding migrate`.
+5. **Run** the binary: `./ding`. With `DING_HTTP_LISTEN` set it serves HTTP and
+   ignores Lambda detection.
+6. **Front it with TLS** (ALB, nginx, or Caddy) and point Discord's Interactions
+   Endpoint URL at `https://<your-host>/interactions`.
+7. **Health check:** `curl http://localhost:8080/health` → `{"status":"ok"}`.
+
+Trade-offs versus Lambda:
+
+- No Lambda concurrency or timeout limits; simpler local debugging; no API
+  Gateway overhead.
+- You own instance uptime and patching, and there is no automatic scaling (add
+  an ASG + load balancer if you need it). Keep to a single writer so SQLite
+  locking stays safe.
+
+## 7. Verify
 
 - `GET`/`POST` a Discord PING to the endpoint → `{"type":1}` (PONG).
 - Invoke `ding-send` manually → email via Resend + Discord embed posted.

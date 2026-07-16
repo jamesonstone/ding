@@ -23,7 +23,7 @@ read_policy_default: conditional
 ## Applies When
 
 - A coding agent is working in a Kit-managed downstream project and is unsure which Kit command, subcommand, flag, or alias applies.
-- A task involves choosing between Kit commands such as `kit map`, `kit check`, `kit legacy verify`, `kit ci`, `kit dispatch`, `kit loop review`, or `kit rules`.
+- A task involves choosing between Kit commands such as `kit map`, `kit check`, `kit legacy verify`, `kit ci`, `kit pr fix`, `kit dispatch`, `kit loop review`, or `kit rules`.
 - Project docs, scripts, or prompts mention Kit command behavior and should avoid stale assumptions.
 
 ## Rules
@@ -55,14 +55,15 @@ Before completing downstream instruction or prompt work that references Kit comm
 - `kit capabilities --search <term> --json` discovers the relevant Kit command.
 - `kit capabilities <command> --json` accurately describes mutation, network, file-write, git, flag, example, and caveat behavior.
 - Downstream project docs use `kit capabilities` for command discovery and do not require editing Kit source files.
-- `kit init --refresh` installs or refreshes this usage rule without installing the maintainer-only `command-capabilities` rule.
+- `kit reconcile --include-files` installs or refreshes this usage rule without installing the maintainer-only `command-capabilities` rule.
 
 ## Examples
 
 Choosing a command:
 
 ```bash
-kit capabilities --search review-loop --json
+kit capabilities --search "pr review repair" --json
+kit capabilities pr fix --json
 kit capabilities loop review --json
 ```
 
@@ -75,5 +76,5 @@ kit capabilities dispatch --json
 Refreshing an existing downstream project:
 
 ```bash
-kit init --refresh
+kit reconcile --include-files
 ```

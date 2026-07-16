@@ -3,6 +3,10 @@ kit_metadata_version: 1
 artifact: spec
 workflow_version: 2
 phase: deliver
+clarification:
+  status: ready
+  confidence: 96
+  unresolved_questions: 0
 feature:
   id: 0001
   slug: init-project
@@ -20,26 +24,26 @@ references:
     name: GitHub PR delivery ruleset
     type: ruleset
     target: docs/references/rules/github-pr-delivery.md
-    relation: governs
-    read_policy: required-at-delivery
+    relation: constrains
+    read_policy: must
     used_for: delivery hard-gate contract (issue/branch/commit/PR rules)
-    status: pending
+    status: active
   - id: kit-go-reference
     name: kit sibling repo (Go patterns)
     type: code
     target: ../kit
-    relation: pattern-source
+    relation: guides
     read_policy: conditional
     used_for: package layout, Makefile targets, cobra wiring conventions
-    status: verified
+    status: active
   - id: constitution
     name: Project constitution
     type: doc
     target: docs/CONSTITUTION.md
     relation: constrains
-    read_policy: conditional
+    read_policy: must
     used_for: project invariants and code-file size guidance
-    status: verified
+    status: active
 delivery_intent: issue_branch_pr_later
 ---
 # SPEC
