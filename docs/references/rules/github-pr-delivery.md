@@ -1,12 +1,14 @@
 ---
 kind: ruleset
 slug: github-pr-delivery
-description: Sequences issue, branch, commit, push, ready PR, and post-PR checks after PR workflow consent.
+description: Sequences issue, branch, commit, push, ready PR, documentation-only CI skips, and post-PR checks after PR workflow consent.
 status: active
 applies_to:
   - git
   - github
   - pull-request
+  - github-actions
+  - documentation
   - coding-agent
 read_policy_default: conditional
 ---
@@ -169,22 +171,29 @@ Include:
 - Before push and after updating the pull request, verify its repository, base branch, head branch, head commit, issue assignments, and complete set of closing references.
 - This exception changes traceability mapping only. It does not waive explicit staging, human identity, validation, safety, or ready-for-review requirements.
 
-### Automated Kit Health Worktree Exception
+### Project-Oriented Worktree Delivery
 
-- Ordinary PR delivery stays in the existing project directory. A recurring Kit health automation may use one isolated temporary worktree per repository only when the user explicitly authorized that automation to protect in-flight primary checkouts.
-- Fetch `origin/main` without switching, pulling, merging, stashing, resetting, cleaning, or writing in the primary checkout. Create the temporary worktree from the freshly fetched `origin/main` commit.
-- Run read-only status and health preview in the temporary worktree before GitHub mutation. If no change is required, create no issue, branch, commit, or pull request.
-- When maintenance is required, create or reuse the human-assigned issue first, then create or reuse exact branch `GH-<issue-number>` at the previewed `origin/main` commit inside that worktree.
-- Apply and curate only the Kit health scope, validate the complete diff, stage explicit paths, commit, push, and create or update the ready pull request under the normal delivery gates.
-- Remove the temporary worktree only after successful delivery and only when it is clean. Leave and report a dirty or blocked worktree so evidence is not destroyed.
-- This exception does not authorize worktrees for ordinary feature work, arbitrary recovery, parallel product implementation, or any workflow without explicit user authorization.
+- Work in the existing checkout when it already owns the requested issue branch and does not contain unrelated user work.
+- For a separate issue or pull-request lane, preserve every existing checkout and use only `~/worktrees/<owner>/<repository>/<lane>`.
+- Before creating a linked worktree, inspect the registered worktrees and reuse the exact branch path when one exists.
+- Create or reuse the human-assigned issue first. Then use exact uppercase `GH-<issue-number>` as both the branch and durable worktree lane.
+- Use exact uppercase `PR-<number>` only for detached inspection. Writable review repair must use the pull request's same-repository head branch, normally its durable `GH-<issue-number>` lane.
+- Fetch the remote base without switching, pulling, merging, stashing, resetting, cleaning, or writing in another checkout. Create a new issue branch from the freshly fetched remote base.
+- Use native `git worktree` commands as the portable authority for lane creation, reuse, detached inspection, repair, exact-path validation, movement, pruning, and removal. Optional wrappers may simplify manual use, but rules and reconciled guidance must not depend on them.
+- Apply, validate, stage, commit, push, and create or update the ready pull request only within the selected writable issue branch worktree under the normal delivery gates.
+- Keep the root checkout on the protected default branch; do not automatically check the issue branch out there.
+- Writable lanes symlink the clone's primary checkout repository-root `.env` by default when it exists. Omit the link for isolation, never copy environment contents, never overwrite an existing destination `.env`, and never automatically share `.envrc`.
+- Detached `PR-<number>` inspection lanes do not link `.env`; migration preserves existing files and links without creating new ones.
+- Never nest worktrees inside a repository or use stash, reset, clean, force removal, branch deletion, or substring-based selection to create or clear a lane.
+- Remove a worktree only after successful delivery and only when exact-path checks prove it has no tracked, untracked, ignored, or unpushed state. A verified expected `.env` symlink targeting the primary checkout's repository-root `.env` is the sole narrow exception: remove only that link before ordinary non-force `git worktree remove` and restore it if removal fails.
+- Keep application startup, databases, port allocation, Temporal state, process supervision, and multi-repository runtime orchestration outside the worktree workflow.
 
 ### Branch Workflow
 
 - Branch name is the GitHub issue number only, exact form: `GH-123`.
 - Do not add a slug, suffix, or description.
-- Create or switch branches in the existing project directory unless the explicit automated Kit health worktree exception applies.
-- Do not create or use git worktrees for ordinary PR delivery.
+- Create or reuse the issue branch in the checkout or canonical worktree selected during recon.
+- Never switch an unrelated or dirty checkout merely to enter another issue lane.
 - Before creating or switching to an issue branch, automatically re-run branch/status/staleness recon for the active directory and current branch.
 - Before branching, refresh the base from the remote. Fetch only. Never pull, merge, or checkout the base:
 
@@ -196,9 +205,12 @@ git rev-list --left-right --count "$BASE_BRANCH...origin/$BASE_BRANCH" 2>/dev/nu
 - Create the new branch from the freshly fetched remote base, never from a local copy:
 
 ```bash
-git checkout -b GH-123 origin/$BASE_BRANCH
-test "$(git rev-parse --abbrev-ref HEAD)" = "GH-123" || { echo "ABORT: wrong branch"; exit 1; }
-test "$(git rev-parse HEAD)" = "$(git rev-parse origin/$BASE_BRANCH)" || { echo "ABORT: branch base not at remote head"; exit 1; }
+git fetch origin "$BASE_BRANCH"
+WORKTREE_PATH="$HOME/worktrees/<owner>/<repository>/GH-123"
+mkdir -p "$(dirname "$WORKTREE_PATH")"
+git worktree add -b GH-123 "$WORKTREE_PATH" "origin/$BASE_BRANCH"
+test "$(git -C "$WORKTREE_PATH" rev-parse --abbrev-ref HEAD)" = "GH-123" || { echo "ABORT: wrong branch"; exit 1; }
+test "$(git -C "$WORKTREE_PATH" rev-parse HEAD)" = "$(git -C "$WORKTREE_PATH" rev-parse "origin/$BASE_BRANCH")" || { echo "ABORT: branch base not at remote head"; exit 1; }
 gh pr list --head GH-123 --state all --json number,url,state,isDraft,headRefName,baseRefName,assignees
 ```
 
@@ -255,7 +267,7 @@ Commit title structure is mandatory:
 
 - `<issue_number>` is the `GH-123` form.
 - Example: `feat(GH-123): :sparkles: added a new feature`.
-- The structure must not change. Only `type`, `issue_number`, `gitmoji`, and `short title message` change.
+- The structure must not change except for the conditional documentation-only `[skip ci]` suffix defined below. Otherwise only `type`, `issue_number`, `gitmoji`, and `short title message` change.
 
 Type to gitmoji mapping is deterministic:
 
@@ -271,6 +283,26 @@ Type to gitmoji mapping is deterministic:
 
 - The gitmoji is determined by the type.
 - Do not mix types and gitmoji values, such as pairing `feat` with `:bug:`.
+
+### Documentation-Only CI Skip
+
+- Classify a change as documentation-only from the complete branch and pull request diff against the base branch, including staged and unstaged work, not from the latest commit or command name alone.
+- A qualifying diff may contain prose documentation, agent instruction files, registry rulesets, and non-executable scaffold or registry metadata that cannot change product runtime, build, test, release, deployment, or CI behavior.
+- Product code, tests, dependency manifests or locks, executable scripts, generated runtime artifacts, GitHub workflow files, and runtime, build, test, release, deployment, or CI configuration disqualify the entire pull request.
+- `kit reconcile` is a candidate signal, not proof of eligibility. Inspect its actual diff; qualify it only when every changed path and hunk remains within the documentation-only boundary.
+- A documentation-only follow-up on a mixed pull request is not eligible because GitHub evaluates the pull request HEAD commit. If an eligible pull request becomes mixed, remove `[skip ci]` from the pull request title and push a new commit without a skip directive so CI runs on the complete diff.
+- Before using a skip directive, inspect branch protection, repository rulesets, and other required-check policy. If a skipped workflow would remain pending, block the merge, or the requirement cannot be established confidently, omit `[skip ci]` and run CI.
+- Append the literal suffix `[skip ci]` to every qualifying commit title:
+
+```text
+docs(GH-123): :memo: reconcile Kit-managed documentation [skip ci]
+```
+
+- Append the same literal `[skip ci]` suffix to the pull request title. This preserves the directive when GitHub creates a squash commit from the pull request title instead of a source commit title.
+- The conditional suffix extends the mandatory Conventional Commit title shape; it does not change the required type, issue scope, gitmoji, or short description.
+- GitHub commit-message skip instructions apply only to workflows triggered by `push` and `pull_request`. They do not suppress `pull_request_target` or other events.
+- A skipped workflow is not a passing workflow. Report the exact no-run, skipped, pending, or unaffected-event state and never describe it as green CI.
+- Follow GitHub's documented [workflow-skip behavior](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/skip-workflow-runs) and [squash-merge message behavior](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/configuring-commit-squashing-for-pull-requests).
 
 Commit body must include:
 
@@ -303,6 +335,7 @@ git log -1 --format='%an <%ae> | %cn <%ce>'
 - Author the PR body in the user's name; do not add agent self-attribution.
 - The PR title must follow the Conventional Commits 1.0.0 title shape with the issue number as the required scope:
   `<type>(<issue_number>): <gitmoji> <short title message>`.
+- For a qualifying documentation-only pull request, append the conditional `[skip ci]` suffix required by `Documentation-Only CI Skip`.
 - Example: `feat(GH-123): :sparkles: add invitation workflow`.
 - Use the same allowed `type` values and deterministic type-to-gitmoji mapping as commit titles.
 - Keep the gitmoji immediately after the colon and space as part of the Conventional Commit description.
@@ -316,17 +349,41 @@ git log -1 --format='%an <%ae> | %cn <%ce>'
 - Use `Refs #123` when the PR only partially addresses the issue.
 - Create the PR ready for review, not as a draft, unless the user explicitly asks for a draft PR.
 
+### Squash-And-Merge Preservation
+
+- GitHub synthesizes a new commit when a pull request is squash-merged. Its default title and body depend on repository settings and the number of source commits, so a qualifying pull request must carry `[skip ci]` in both its pull request title and source commit titles.
+- Before selecting `Confirm squash and merge`, inspect the generated squash commit title and body and confirm that at least one contains the literal `[skip ci]`.
+- If the generated message does not contain `[skip ci]`, add the literal suffix before confirming the squash merge without otherwise weakening the repository's commit-message contract.
+- If the complete pull request diff is no longer documentation-only, or skipping would conflict with required checks, remove the directive instead and allow CI to run.
+- After the squash merge, resolve the exact synthesized commit and inspect its message and workflow runs:
+
+```bash
+PR_NUMBER="$(gh pr view --json number -q .number)"
+REPOSITORY="$(gh repo view --json nameWithOwner -q .nameWithOwner)"
+SQUASH_SHA="$(gh pr view "$PR_NUMBER" --json mergeCommit -q .mergeCommit.oid)"
+gh api "repos/$REPOSITORY/commits/$SQUASH_SHA" --jq .commit.message
+gh run list --commit "$SQUASH_SHA" \
+  --json databaseId,event,workflowName,status,conclusion,url,headSha
+```
+
+- Confirm the squash commit message contains `[skip ci]` and that no `push` CI workflow was created for that exact SHA. Report workflows from unaffected events separately.
+
 ### Post-PR Verification
 
 ```bash
-gh pr view --json number,url,author,state,isDraft,assignees
+HEAD_SHA="$(git rev-parse HEAD)"
+gh pr view --json number,url,author,state,isDraft,assignees,title
 gh pr checks
+gh run list --commit "$HEAD_SHA" \
+  --json databaseId,event,workflowName,status,conclusion,url,headSha
 ```
 
 - Confirm GitHub shows the human user as commit author and committer.
 - Confirm the GitHub issue is assigned to the human user.
 - Confirm the PR is assigned to the human user.
 - Confirm the PR is ready for review and not draft, unless the user explicitly asked for a draft PR.
+- For an eligible documentation-only pull request, confirm the pull request title and HEAD commit message contain `[skip ci]` and no `push` or `pull_request` CI workflow was created for the exact HEAD SHA.
+- Treat `pull_request_target` and other unaffected event runs separately; their presence does not mean the skip directive failed.
 - Do not claim CI passed unless checks were observed passing.
 - If checks are pending, failing, unavailable, or not run, report that exact state.
 
@@ -356,10 +413,13 @@ Include:
 - Do not omit the repository PR template.
 - Do not create descriptive branch names when an issue number is available.
 - Do not commit to the protected base branch.
-- Do not create or use git worktrees for ordinary PR delivery or outside the explicit automated Kit health exception.
+- Do not create worktrees inside repositories, use flat ad hoc paths, edit detached `PR-<number>` views, or discard state to make room for a lane.
 - Do not reuse a branch that contains unrelated work.
 - Do not stage files in bulk.
 - Do not commit with mixed type and gitmoji values.
+- Do not infer documentation-only eligibility from `kit reconcile`, a docs-only latest commit, or file extensions without reviewing the complete pull request diff.
+- Do not put `[skip ci]` on a mixed pull request or when required checks would remain pending.
+- Do not remove `[skip ci]` from the generated commit message while squash-merging a qualifying documentation-only pull request.
 - Do not add agent or tool attribution to commits or PR bodies.
 - Do not force-push, rebase, or amend already-pushed commits to recover from failure.
 
@@ -384,6 +444,7 @@ Include:
 - Confirm author and committer identity were inspected before commit and are the human user.
 - Confirm staged diff was reviewed before commit.
 - Confirm commit title and body follow the required format.
+- For a documentation-only CI skip, confirm the complete pull request diff qualifies, required-check policy permits the skip, and every commit title plus the pull request title contains `[skip ci]`.
 - Confirm branch was pushed only after commit.
 - Confirm active directory, branch, remote, and PR state were rechecked immediately before pushing.
 - Confirm PR was created with the repository template when present.
@@ -391,6 +452,7 @@ Include:
 - Confirm PR assignee is the human user.
 - Confirm PR is ready for review and not draft unless explicitly requested otherwise.
 - Confirm PR and CI state were observed before final reporting.
+- When squash-merging an eligible documentation-only pull request, confirm the generated message retained `[skip ci]`, then verify the exact squash commit message and absence of a `push` CI run.
 
 ## Examples
 

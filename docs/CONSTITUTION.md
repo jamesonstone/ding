@@ -2,7 +2,10 @@
 
 ## PRINCIPLES
 
-<!-- TODO: define core principles that guide all decisions -->
+- Invoice and payment state is durable financial truth and must be changed explicitly.
+- Every send path fails closed: invalid input, missing configuration, or persistence errors send nothing.
+- The CLI, Lambda handlers, and HTTP server share one invoice domain model and validation behavior.
+- External messages are deterministic projections of persisted invoice and customer data.
 
 ## CONSTRAINTS
 
@@ -46,8 +49,13 @@
 
 ## NON-GOALS
 
-<!-- TODO: define what this project explicitly will not do -->
+- Ding is not an accounting ledger, payment processor, or general customer relationship manager.
+- Ding does not use ephemeral Lambda storage as the system of record.
+- Ding does not infer payments or mutate invoice state from outbound email or Discord delivery.
 
 ## DEFINITIONS
 
-<!-- TODO: define key terms used throughout the project -->
+- **Customer**: a configured billing recipient identified by the stable customer ID used by commands and metadata files.
+- **Invoice**: an issued amount, due-date state, and recorded payment history stored in SQLite.
+- **Dry run**: rendering and validation that performs no Resend or Discord delivery.
+- **Send job**: the monthly summary operation, whether invoked locally, by Lambda, or by another scheduler.
