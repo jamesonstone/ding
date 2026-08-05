@@ -3,6 +3,7 @@
 ## Purpose
 
 - Use `rules/testing-and-environment-validation.md` before implementation and validation to preserve code-level checks and add environment evidence safely
+- Use `rules/source-file-size.md` before editing implementation/source or test files and for whole-project reconcile audits
 - This directory holds durable repo-local references that are broader than one feature
 - Keep long-lived background context here instead of in injected top-level instruction files
 - Link these files from feature front matter references when they materially shape work
