@@ -21,6 +21,7 @@
 - Use subagents when the work cleanly separates into low-overlap lanes after discovery
 - Keep broad or noisy discovery in RLM first; use dispatch or direct subagent execution only after the relevant workstreams are narrow enough to predict overlap
 - Predict overlap conservatively before parallelizing
+- When `cross-repository-program-coordination` applies, dispatch only the canonical program ledger's reconciled ready frontier and checkpoint program state after each material transition or handoff
 - Keep the main agent responsible for synthesis, integration, validation, and communication
 
 ## Review Loop
@@ -65,6 +66,21 @@
 - Work in the existing project directory by default
 - Do not create or use git worktrees for agent work
 - If the current branch or dirty state is unsuitable, stop and ask the user how to proceed instead of creating an alternate checkout
+
+## PR Merge
+
+- PR delivery never implies merge consent. A direct user request or accepted bounded merge plan must name the exact authorized PR set.
+- Before any merge or merge-queue mutation, resolve `pull-request-merge` and load `docs/references/rules/github-pr-merge.md`.
+- Merge only exact current `MERGE_READY` nodes from the authorized frontier; revalidate actor, head/base, repository policy, checks, dependencies, and infrastructure effects before every wave.
+- Revalidation and compatible retries do not require another prompt. Material scope expansion does.
+- Report merge, hosted workflow, deployment/runtime, and production evidence separately.
+
+## PR Release Orchestration
+
+- Use `kit pr orchestrate` to turn explicit repository scope into a deterministic dependency-aware release prompt; Kit does not enumerate PRs, merge, deploy, mutate infrastructure, or launch an agent.
+- Use repeatable `--repos` for exact repositories or `--root` for the root and immediate child repositories. Noninteractive use requires one of those scope flags.
+- Use `--dry-run` to inspect resolved configuration provenance and the full prompt without clipboard access.
+- Release agents resolve `release-orchestration` and, before any authorized merge, `pull-request-merge`. Preserve `MERGE_READY`, `BLOCKED`, and `UNKNOWN` literally.
 
 ## Project Worktrees
 

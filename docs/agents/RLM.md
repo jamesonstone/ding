@@ -35,6 +35,8 @@
 ## Rules
 
 - Load `docs/references/rules/testing-and-environment-validation.md` and `docs/references/testing.md` before implementation or validation, including browser automation and browser testing
+- Load `docs/references/rules/infrastructure-change-approval.md` before planning or performing mutations to public-cloud resources, Kubernetes resources or cluster state, or infrastructure-as-code source, configuration, or state
+- Load `docs/references/rules/cross-repository-program-coordination.md` before implementing or resuming an accepted plan that spans multiple repositories with dependent deliverables, staged deployment or activation, or expected agent or session handoff
 - Keep map work file-scoped or narrowly bounded so synthesis stays deterministic
 - Prefer repo-local docs before secondary global inputs
 - For v2 feature-scoped work, keep must-read inputs small: the current `SPEC.md` section or decision, plus directly linked references, relationships, rules, evidence, or historical staged artifacts only when they affect that decision

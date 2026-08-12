@@ -9,6 +9,51 @@
 - Never mix multiple features in one `docs/specs/<feature>/` directory
 - Update docs first when reality diverges from documented behavior
 
+## Work Lane Mutation Hard Gate
+
+Before a coding agent performs any repository file or delivery mutation, it
+must:
+
+1. Load `docs/agents/GUARDRAILS.md` and
+   `docs/references/rules/work-lane-gating.md`.
+2. Complete read-only safety recon, including the current branch, dirty state,
+   remote, active pull requests, registered worktrees, and exact primary
+   checkout.
+3. Ask exactly:
+
+   > Before I make any repository changes, should I create a new GitHub issue, `GH-<issue-number>` branch, canonical worktree, and pull request for this work, or continue in the existing branch/worktree and land it through that branch's pull request?
+4. Wait for the user's explicit choice unless that exact choice is already
+   recorded for the same unit of work.
+5. Record a Pull-Request Landing Plan with the repository, issue, branch,
+   non-primary worktree, protected base, and create-or-update PR target, then
+   verify that plan still matches before every mutation.
+
+- This gate covers source, tests, documentation, specs, plans, generated files,
+  configuration, and every other repository file. It also covers every delivery
+  mutation, including issue, branch, staging, commit, push, worktree, and
+  pull-request mutations, as well as merges. Read-only discovery and planning
+  may precede it; write-capable commands such as `kit spec`,
+  `kit init`, and `kit reconcile` may not.
+- Never infer the choice from a clean default branch, an issue reference, or a
+  generic request to produce a pull request.
+- For a new lane, create or reuse one human-assigned issue, exact
+  `GH-<issue-number>` branch, canonical linked worktree at
+  `~/worktrees/<owner>/<repository>/GH-<issue-number>`, and one ready-PR plan
+  before editing files.
+- Continue existing work only after proving the non-protected branch, its exact
+  owning linked worktree, issue scope, protected base, and create-or-update PR
+  target. Reuse an existing pull request; do not create a second delivery lane.
+- Treat the clone's primary/root checkout as read-only for coding-agent work,
+  regardless of branch or cleanliness. Never edit there with a plan to move the
+  diff later.
+- One choice covers directly required tests, documentation, validation fixes,
+  and delivery. Ask again for materially new or tangential scope.
+- If an ungated or primary-checkout change is detected, stop and preserve it.
+  Do not stage, commit, push, stash, reset, clean, discard, or silently transfer
+  it; follow `work-lane-gating` recovery.
+
+---
+
 ## GitHub Delivery Hard Gate
 
 When the user asks to create or mutate an issue, branch, commit, push, or pull request in a Kit-managed project, stop before any GitHub or git mutation.
@@ -88,6 +133,28 @@ Do not create:
 - PRs that omit the repo template
 
 unless the repo-local Kit rules explicitly require them or the user explicitly overrides the Kit contract.
+
+## GitHub Merge Authorization Hard Gate
+
+- Merge is a distinct mutation boundary. PR-delivery consent, automatic lane allocation, approval, check success, subagent assignment, and a program ledger never imply merge consent.
+- Merge only after a direct user request or accepted bounded merge plan names the exact authorized PR set.
+- Before any merge or merge-queue mutation, resolve `pull-request-merge` and load `docs/references/rules/github-pr-merge.md`.
+- Reconcile the authorization source, authenticated actor, expected head/base, repository merge policy, current reviews/checks, dependencies, and infrastructure or deployment effects before every wave.
+- Only exact current `MERGE_READY` nodes may merge. Pending, missing, stale-head, or policy-ineligible skipped checks are not passing.
+- Revalidating an authorized target does not require another prompt. Adding a target or materially changing actor, method, environment, infrastructure effect, or recovery requires follow-up authorization.
+- Never bypass protection, reviews, required checks, a merge queue, repository policy, or identity safeguards.
+- Report merge, hosted workflow, deployment/runtime, and production evidence as separate claims.
+
+## Infrastructure Change Approval Hard Gate
+
+- Before mutating public-cloud resources, Kubernetes resources or cluster state, or infrastructure-as-code source, configuration, or state, load `docs/references/rules/infrastructure-change-approval.md`.
+- Read-only discovery may precede confirmation only when it does not alter cloud resources, Kubernetes objects, remote state, or repository-owned infrastructure source.
+- Put one consolidated outline of the target context, resource actions, execution boundary, material impact and risk, rollback or recovery, and validation evidence into the task plan when planning is used; otherwise present it once before the first covered mutation. Obtain one explicit user confirmation for the complete bounded batch.
+- Approval of a task plan containing the complete outline counts as confirmation. A sufficiently detailed initial request may also count only when it clearly authorizes the exact bounded batch and the batch does not delete or remove infrastructure.
+- Deleting, destroying, or removing infrastructure always requires explicit confirmation after the consolidated outline, even when the initial request asked for it; one confirmation covers every deletion named in that batch.
+- After confirmation, execute the exact approved batch and continue the rest of the task to completion in one pass without routine command-by-command approval.
+- If additional covered infrastructure changes become necessary, collect all then-known changes into one follow-up outline, obtain one confirmation, and execute that follow-up batch in one pass. Do not re-confirm actions already included in an approved batch.
+- Treat a material change to target identity, environment, region or cluster, resource set, action type, impact, or recovery as a follow-up batch; compatible tools, commands, and retries inside the approved boundary do not require another prompt.
 
 ## AWS Context Hard Gate
 

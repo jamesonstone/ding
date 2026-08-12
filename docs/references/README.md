@@ -9,6 +9,8 @@
 - Link these files from feature front matter references when they materially shape work
 - Store durable rulesets under `rules/<slug>.md` and link them with `kit rules link` instead of copying rules into agent instruction files
 - Use `rules/kit-capabilities-usage.md` in downstream projects for Kit command discovery guidance
+- Use `rules/infrastructure-change-approval.md` before mutating public-cloud resources, Kubernetes resources or cluster state, or infrastructure-as-code source, configuration, or state
+- Use `rules/cross-repository-program-coordination.md` before implementing or resuming an accepted multi-repository program with dependent deliverables, staged activation, or agent handoff
 - Use `kit rules add` to import or activate available registry rulesets from the Kit GitHub `main` branch
 - Use `kit rules view <slug>` to preview a local or registry ruleset before importing it
 - Use `kit init --refresh` to adopt existing registry rules into `.kit.yaml` registry state and pick up safe upstream ruleset updates

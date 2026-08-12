@@ -1,5 +1,13 @@
 # Workflows
 
+## Work Lane Precondition
+
+- Read-only discovery and planning may run before a lane exists
+- Before any repository write, obtain the explicit new-lane versus
+  continue-existing choice and record the complete pull-request landing plan
+- Create or update feature artifacts only inside the selected non-primary
+  writable worktree
+
 ## Spec-Driven Work
 
 - Use this path for new features, substantial behavioral changes, cross-component changes, or work that already has feature docs
