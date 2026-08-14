@@ -35,6 +35,7 @@
 ## Rules
 
 - Load `docs/references/rules/testing-and-environment-validation.md` and `docs/references/testing.md` before implementation or validation, including browser automation and browser testing
+- Load `docs/references/rules/aws-agent-toolkit-guidance.md` before AWS-dependent work
 - Load `docs/references/rules/infrastructure-change-approval.md` before planning or performing mutations to public-cloud resources, Kubernetes resources or cluster state, or infrastructure-as-code source, configuration, or state
 - Load `docs/references/rules/cross-repository-program-coordination.md` before implementing or resuming an accepted plan that spans multiple repositories with dependent deliverables, staged deployment or activation, or expected agent or session handoff
 - Keep map work file-scoped or narrowly bounded so synthesis stays deterministic
