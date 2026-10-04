@@ -23,7 +23,7 @@ read_policy_default: conditional
 ## Applies When
 
 - A coding agent is working in a Kit-managed downstream project and is unsure which Kit command, subcommand, flag, or alias applies.
-- A task involves choosing between Kit commands such as `kit map`, `kit check`, `kit legacy verify`, `kit ci`, `kit pr fix`, `kit dispatch`, `kit loop review`, or `kit rules`.
+- A task involves choosing between supported commands such as `kit context resolve`, `kit check`, `kit pr fix`, `kit dispatch`, `kit reconcile`, or `kit rules`.
 - Project docs, scripts, or prompts mention Kit command behavior and should avoid stale assumptions.
 
 ## Rules
@@ -32,10 +32,13 @@ read_policy_default: conditional
 - Prefer targeted JSON after narrowing the command:
   - `kit capabilities <command> --json`
   - `kit capabilities rules add --json`
-  - `kit capabilities skill mine --json`
+  - `kit capabilities context resolve --json`
 - Use `kit capabilities --search <term> --json` for compact workflow discovery.
-- Use `kit capabilities --full --json` only when hidden or deprecated compatibility command metadata is specifically needed.
+- Use `kit capabilities --full --json` only when detailed metadata for the complete supported surface is specifically needed.
 - Treat `kit capabilities` as read-only command metadata: it does not load `.kit.yaml`, write project files, call the network, execute subprocesses, or mutate git.
+- Read root-persistent options such as `--profile` and `--single-agent` from
+  the JSON payload's `global_flags`; command records contain only flags owned
+  by that command or inherited from a non-root parent.
 - Do not maintain Kit's internal command catalog from a downstream project.
 - If downstream project guidance conflicts with `kit capabilities`, prefer the live command metadata for command behavior and update the downstream documentation.
 - If the Kit command catalog appears stale or wrong, fix it in the `jamesonstone/kit` repository or report it upstream.
@@ -45,7 +48,8 @@ read_policy_default: conditional
 - Do not guess Kit command flags from memory when `kit capabilities <command> --json` can answer the question.
 - Do not run `kit capabilities --full --json` repeatedly as persistent context.
 - Do not copy Kit command contracts into downstream always-loaded instruction files when a targeted lookup would be enough.
-- Do not tell downstream projects to edit `pkg/cli/capabilities_catalog.go`.
+- Do not tell downstream projects to edit Kit's internal capability catalog
+  files under `pkg/cli/`.
 - Do not treat `kit capabilities` as a project policy source; use repo-local docs and rulesets for project policy.
 
 ## Verification
@@ -64,7 +68,7 @@ Choosing a command:
 ```bash
 kit capabilities --search "pr review repair" --json
 kit capabilities pr fix --json
-kit capabilities loop review --json
+kit capabilities context resolve --json
 ```
 
 Checking command safety before use:
